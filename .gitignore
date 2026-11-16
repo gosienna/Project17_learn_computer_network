@@ -1,0 +1,6 @@
+# pixi environments
+.pixi/*
+!.pixi/config.toml
+
+# textbook PDF (large, copyrighted)
+reference/Computer Networks (Andrew S. Tanenbaum.pdf
