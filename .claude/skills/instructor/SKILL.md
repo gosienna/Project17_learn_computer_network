@@ -107,11 +107,47 @@ Each turn, give exactly one bite in this shape:
 **Why:** one sentence concept
 **Do (≤10 lines):** pseudocode or comment stubs only — no runnable code the user can paste and run
 **Observe:** how the user verifies the change (UI, canvas, slider, log, test, etc.)
-**Reference:** link or path under `reference/` if a concept needs background
+**Reference:** [§x.y Section title, p. N](reference/<doc>#page=N) — required, see below
+> Key excerpt: the 1–4 sentences (or table/figure caption) from that section
+> that this bite puts into practice, quoted exactly.
 ```
 
 Prefer placing TODO-style comments in the target file so Tab complete has a
 hook. Do not fill in the implementation body.
+
+### Reference rule (every step)
+
+Every step must point at its source material. Do both of these whenever the
+material exists:
+
+1. **Hyperlink** the section with a clickable markdown link relative to the
+   workspace root.
+   - For a PDF, add `#page=N`, using the **PDF page number** (the one a viewer
+     shows), not the printed page number.
+   - Percent-encode spaces and parentheses in the path (`%20`, `%28`, `%29`),
+     or the markdown link breaks.
+   - Use the `Read first` lines in the framework's bite files and the page map
+     in `reference/README.md` as the source of truth for which section goes
+     with which bite.
+2. **Extract** the part of that section the bite depends on, and quote it in
+   the step under *Key excerpt*.
+   - Keep it short: 1–4 sentences, a figure caption, or a few table rows.
+   - Quote exactly and don't paraphrase inside the quote.
+   - When the key content is a figure (a header layout, waveform, or state
+     diagram), render the page, look at it, and then describe the parts the
+     bite needs, such as field names, bit widths, or which transition. Say
+     which figure it comes from.
+   - Use the project's documented tooling (see `CLAUDE.md`) to extract text
+     or render pages. Never guess page contents from memory.
+
+If the bite builds on something the reference doesn't cover (for example an
+RFC detail or an OS API), say so in one line. Then add or point to a short note
+under `reference/` (see Reference maintenance). Never leave the Reference line
+empty.
+
+When the framework intentionally differs from the reference (a different
+convention, or a simplification), say so in the step, so that comparing with
+the book doesn't confuse the learner.
 
 ## Framework maintenance
 
@@ -127,11 +163,16 @@ hook. Do not fill in the implementation body.
 
 ## Reference maintenance
 
-- Search `reference/` when explaining concepts tied to the current step.
+- Search `reference/` when explaining concepts tied to the current step. For
+  a large PDF, search the extracted text for the topic, then confirm the page
+  by reading it before linking.
 - If material is missing, add a short `.md` (or note a `.pdf`) under `reference/`
   focused on that concept — enough for the next bite, not a textbook.
-- Point the user at the relevant file; do not replace the implementation step
-  with a long lecture.
+- When the learner asks a concept question, answer with a hyperlink to the
+  section plus a short exact excerpt, then a brief explanation in your own
+  words. Don't replace the implementation step with a long lecture.
+- Keep `reference/README.md` (the section → page map) up to date when you
+  discover a new relevant section or correct a page number.
 
 ## Anti-patterns
 
@@ -139,6 +180,9 @@ hook. Do not fill in the implementation body.
 - Asking for changes in more than one script/file in a single step
 - Steps larger than ~10 lines without splitting
 - Steps with no observable check
+- Steps whose Reference line is missing, unlinked, or cites a page without
+  checking it
+- Long copied passages from a reference: excerpts stay short and targeted
 - Dumping multi-file patches or full modules for the user to apply blindly
 - Pasting runnable code (complete functions, imports, or copy-paste snippets) in chat or in comments
 - Skipping framework updates after a completed or revised step

@@ -13,7 +13,14 @@ project folder with Python's built-in HTTP server and open `/web/`.
 
 **Current bite:** not started
 
+Book links open the PDF at the given page. Page numbers are PDF pages.
+
 ## Bites
+
+> **Read first:** [§1.3.1 Protocol Hierarchies, pp. 28–30](../reference/Computer%20Networks%20%28Andrew%20S.%20Tanenbaum.pdf#page=28).
+> Fig. 1-15 shows a message picking up a header at each layer on the way
+> down and losing it on the way up. This page draws that figure for real
+> packets.
 
 ### Events
 

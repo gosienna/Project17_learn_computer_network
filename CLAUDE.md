@@ -17,9 +17,14 @@ Teaching here follows the project's `instructor` skill (`.claude/skills/instruct
 
 ## Contents
 
-- `reference/Computer Networks (Andrew S. Tanenbaum.pdf` is the course textbook (about 31 MB).
+- `reference/Computer Networks (Andrew S. Tanenbaum.pdf` is the course textbook: 4th edition, 674 PDF pages, about 31 MB.
+- `reference/README.md` maps each framework level to book sections by PDF page number.
 
 ## Working with the textbook PDF
 
-- The Read tool needs `pdftoppm` from poppler to render PDF pages, and poppler isn't installed on this machine yet (`brew install poppler`).
-- The PDF is large, so read it in small page ranges with the Read tool's `pages` parameter. Don't try to load the whole file.
+There's no Homebrew on this machine. The user wants tools isolated, so don't install anything system-wide.
+
+- **Page images, including figures:** poppler is installed locally in this folder's pixi environment (`pixi.toml`, env in `.pixi/`, which git ignores). `pdftoppm` isn't on PATH, so the Read tool can't open the PDF directly. Render pages to PNG in the scratchpad, then Read the PNG:
+  `PIXI_NO_TELEMETRY=1 ~/.pixi/bin/pixi run pdftoppm -f <page> -l <page> -r 80 -png "reference/Computer Networks (Andrew S. Tanenbaum.pdf" <scratchpad>/p`
+- **Text, for searching:** use PyMuPDF through uv in a throwaway environment: `~/.local/bin/uv run --no-project --with pymupdf python -I <script> ...`, with the script kept in the scratchpad. `fitz.open(path)[n-1].get_text()` gives PDF page `n`, and `doc.get_toc()` gives the outline. Figures come out blank in text mode.
+- The 4th edition's Manchester convention (1 = high→low) is the reverse of IEEE 802.3. The framework follows the book.

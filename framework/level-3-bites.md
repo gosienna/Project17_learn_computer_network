@@ -1,4 +1,4 @@
-# Level 3: MAC sublayer / Ethernet (Tanenbaum ch. 4)
+# Level 3: MAC sublayer / Ethernet (Tanenbaum §4.3) + ARP (§5.6.3)
 
 **Goal:** leave the simulated wire. Receive real Ethernet frames from the Linux
 kernel through a TAP device, parse them, and answer ARP so the kernel learns
@@ -13,13 +13,19 @@ and `socat` are installed.
 | Side | Interface | IP | MAC |
 |---|---|---|---|
 | Kernel (the "other machine") | `tap0` | `10.0.0.1` | whatever the kernel picks |
-| Your stack | — | `10.0.0.2` | `02:00:00:00:00:02` (locally administered) |
+| Your stack | — | `10.0.0.2` | `02:00:00:00:00:02` (local, unicast) |
 
 **Current bite:** not started
+
+Book links open the PDF at the given page. Page numbers are PDF pages.
+The 4th edition doesn't cover TAP devices or the ARP packet layout; short notes
+in `reference/` fill those gaps when you reach them.
 
 ## Bites
 
 ### Environment
+
+> **Read first:** nothing in the book. This is setup.
 
 - [ ] **3.1 A Linux box**: `Dockerfile` (or notes in `framework/env.md` if you
   use a VM)
@@ -35,6 +41,11 @@ and `socat` are installed.
 
 ### Raw frames
 
+> **Read first:** [§4.3.3 The Ethernet MAC Sublayer Protocol, pp. 206–207](../reference/Computer%20Networks%20%28Andrew%20S.%20Tanenbaum.pdf#page=206):
+> Fig. 4-17(a) is the DIX frame you'll be parsing: preamble, destination,
+> source, type, data, pad, checksum. Also covers broadcast and group
+> addresses, local vs. global addresses, and the 64-byte minimum.
+
 - [ ] **3.3 Attach to the TAP device**: `stack/eth/tap.py`
   `open_tap("tap0")`: open `/dev/net/tun` and use `ioctl` with `TUNSETIFF`
   (`0x400454ca`) and flags `IFF_TAP | IFF_NO_PI` (`0x0002 | 0x1000`) to attach.
@@ -43,23 +54,35 @@ and `socat` are installed.
   another shell. Those frames are ARP requests.
 - [ ] **3.4 A sniffer**: `tools/sniff.py`
   Print every frame as a hex dump, 16 bytes per row.
-  *Observe:* your dump matches `tcpdump -i tap0 -xx` byte for byte, except
-  that the preamble and FCS never reach you.
+  *Observe:* your dump matches `tcpdump -i tap0 -xx` byte for byte. The
+  Preamble and Checksum fields from Fig. 4-17 never reach you, because the
+  hardware (here, the kernel) handles them.
 - [ ] **3.5 Parse the Ethernet header**: `stack/eth/ethernet.py`
-  `parse(frame)` returns destination MAC (6 bytes), source MAC (6),
-  EtherType (2), and payload. Add `mac_str()` to format a MAC address.
+  `parse(frame)` returns the Fig. 4-17(a) fields you actually receive:
+  destination address (6 bytes), source address (6), Type (2), and data.
+  Add `mac_str()` to format a MAC address.
   *Observe:* the sniffer prints lines like
   `ff:ff:ff:ff:ff:ff ← 3e:…  type=0x0806`.
 - [ ] **3.6 Build an Ethernet frame**: `stack/eth/ethernet.py`
-  `build(dst, src, ethertype, payload)`. Pad the result to the 60-byte minimum.
+  `build(dst, src, type, data)`. Pad short data, as the book describes: the
+  minimum frame is 64 bytes including the 4-byte checksum, so you pad to 60.
   *Observe:* `parse(build(...))` returns what you put in, and a tiny payload
   comes out 60 bytes long.
 - [ ] **3.7 Is this frame for me?**: `stack/eth/ethernet.py`
-  `MY_MAC = 02:00:00:00:00:02`. `classify(dst)` returns MINE, BROADCAST, or
-  OTHER.
-  *Observe:* the sniffer labels ARP requests BROADCAST.
+  `MY_MAC = 02:00:00:00:00:02`. `classify(dst)` returns MINE, BROADCAST (all
+  ones), MULTICAST (group bit set), or OTHER. The book calls the group bit "the
+  high-order bit", meaning the first bit sent on the wire. In the bytes you
+  read, it's the **lowest** bit of the first byte. The local/global bit is the
+  bit next to it, which is why `02:…` is a local unicast address.
+  *Observe:* the sniffer labels ARP requests BROADCAST, and IPv6 neighbor
+  traffic (`33:33:…`) MULTICAST.
 
 ### ARP: from IP address to MAC address
+
+> **Read first:** [§5.6.3 Internet Control Protocols, ARP subsection, pp. 343–345](../reference/Computer%20Networks%20%28Andrew%20S.%20Tanenbaum.pdf#page=343):
+> why an IP address isn't enough to deliver a frame, the "who owns IP address
+> …?" broadcast, the ARP cache, and the trick of putting the sender's own
+> mapping into the request (Fig. 5-62). For the byte layout, see RFC 826.
 
 - [ ] **3.8 Parse ARP**: `stack/eth/arp.py`
   Fields: hardware type, protocol type, lengths, operation, sender MAC and IP,
@@ -70,8 +93,8 @@ and `socat` are installed.
   and fill in your MAC.
   *Observe:* parsing your reply prints `ARP 10.0.0.2 is-at 02:00:00:00:00:02`.
 - [ ] **3.10 ARP cache**: `stack/eth/arp.py`
-  Keep a table mapping IP → MAC, and learn the sender's pair from every ARP
-  packet you see.
+  Keep a table mapping IP → MAC. Learn the sender's pair from every ARP packet
+  you see; that's the optimization from p. 344 that saves a second broadcast.
   *Observe:* after one ping attempt, printing the table shows `10.0.0.1 → 3e:…`.
 - [ ] **3.11 The interface loop**: `stack/netif.py`
   Read a frame → parse Ethernet → if it's an ARP request for `10.0.0.2`,
@@ -84,7 +107,7 @@ and `socat` are installed.
 
 ## Concepts covered
 
-MAC addresses (unicast, broadcast, locally administered), Ethernet frame
-layout, EtherType, minimum frame size, the preamble and FCS (which the
-hardware handles), ARP and ARP caches, and why IP needs a link-layer address
-to deliver anything.
+The DIX Ethernet frame layout, unicast, multicast and broadcast addresses,
+local vs. global addresses, the Type field, minimum frame size and padding,
+the preamble and checksum (which the hardware handles), ARP and ARP caches,
+and why IP needs a link-layer address to deliver anything.

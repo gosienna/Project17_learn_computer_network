@@ -1,0 +1,10 @@
+[workspace]
+channels = ['conda-forge']
+name = "Project17_learn_computer_network"
+platforms = ['osx-arm64']
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+poppler = ">=26.11.0,<27"
